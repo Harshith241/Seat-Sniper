@@ -1,0 +1,22 @@
+{
+ "_note": "FAKE demo data. Not real ASU numbers. Used by check_seats.py --sample: watch w1 was full (0 open) and this snapshot shows 2 seats open, so --sample prints a SAMPLE alert.",
+ "watch": {
+  "id": "w1", "term": "2271", "mode": "section", "class_number": "99001",
+  "label": "CSE 355 (Prof Sample)", "subject": "CSE", "catalog": "355",
+  "instructor_contains": null, "campus": null, "online_only": false, "component": null,
+  "last_open": 0, "last_total": 40, "last_waitlist": 3, "last_checked": "2026-10-24T16:20",
+  "alerted_at": null, "acked": false, "errors": 0, "snooze_until": null, "expires": "2099-01-01"
+ },
+ "classes": [
+  {"CLAS": {"STRM": "2271", "CLASSNBR": "99001", "SUBJECT": "CSE", "CATALOGNBR": "355",
+    "TITLE": "Intro Theoretical Computer Sci", "INSTRUCTORSLIST": ["Sam Sample"],
+    "MON": "Y", "TUES": "N", "WED": "Y", "THURS": "N", "FRI": "Y", "SAT": "N", "SUN": "N",
+    "STARTTIME": "10:30 AM", "CAMPUS": "TEMPE", "INSTRUCTIONMODE": "P", "COMPONENTPRIMARY": "LEC",
+    "ENRLTOT": "38", "ENRLCAP": "40", "WAITTOT": "0", "ENRLSTAT": "O", "ENROLLDEADLINE": "2099-01-01 00:00:00.0"}},
+  {"CLAS": {"STRM": "2271", "CLASSNBR": "99002", "SUBJECT": "CSE", "CATALOGNBR": "355",
+    "TITLE": "Intro Theoretical Computer Sci", "INSTRUCTORSLIST": ["Pat Placeholder"],
+    "MON": "N", "TUES": "Y", "WED": "N", "THURS": "Y", "FRI": "N", "SAT": "N", "SUN": "N",
+    "STARTTIME": "1:30 PM", "CAMPUS": "TEMPE", "INSTRUCTIONMODE": "P", "COMPONENTPRIMARY": "LEC",
+    "ENRLTOT": "60", "ENRLCAP": "60", "WAITTOT": "5", "ENRLSTAT": "C", "ENROLLDEADLINE": "2099-01-01 00:00:00.0"}}
+ ]
+}

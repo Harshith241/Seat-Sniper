@@ -1,0 +1,191 @@
+{
+ "_note": "Real ASU Class Search API response for CSE 355, term 2267, captured 2026-10-24, trimmed to the fields seat-sniper reads.",
+ "classes": [
+  {
+   "CLAS": {
+    "STRM": "2267",
+    "CLASSNBR": "66447",
+    "CLASSSECTION": "1031",
+    "SUBJECT": "CSE",
+    "CATALOGNBR": "355",
+    "TITLE": "Intro Theoretical Computer Sci",
+    "CAMPUS": "TEMPE",
+    "INSTRUCTIONMODE": "P",
+    "STARTTIME": "10:30 AM",
+    "ENDTIME": "11:45 AM",
+    "MON": "N",
+    "TUES": "Y",
+    "WED": "N",
+    "THURS": "Y",
+    "FRI": "N",
+    "SAT": "N",
+    "SUN": "N",
+    "ENRLTOT": "150",
+    "ENRLCAP": "150",
+    "WAITTOT": "0",
+    "WAITCAP": "0",
+    "ENRLSTAT": "C",
+    "COMPONENTPRIMARY": "LEC",
+    "INSTRUCTORSLIST": [
+     "David Claveau"
+    ],
+    "ENROLLDEADLINE": "2026-08-26 00:00:00.0"
+   }
+  },
+  {
+   "CLAS": {
+    "STRM": "2267",
+    "CLASSNBR": "66448",
+    "CLASSSECTION": "1019",
+    "SUBJECT": "CSE",
+    "CATALOGNBR": "355",
+    "TITLE": "Intro Theoretical Computer Sci",
+    "CAMPUS": "TEMPE",
+    "INSTRUCTIONMODE": "P",
+    "STARTTIME": "1:30 PM",
+    "ENDTIME": "2:45 PM",
+    "MON": "Y",
+    "TUES": "N",
+    "WED": "Y",
+    "THURS": "N",
+    "FRI": "N",
+    "SAT": "N",
+    "SUN": "N",
+    "ENRLTOT": "93",
+    "ENRLCAP": "150",
+    "WAITTOT": "0",
+    "WAITCAP": "0",
+    "ENRLSTAT": "O",
+    "COMPONENTPRIMARY": "LEC",
+    "INSTRUCTORSLIST": [
+     "Xuerong Feng"
+    ],
+    "ENROLLDEADLINE": "2026-08-26 00:00:00.0"
+   }
+  },
+  {
+   "CLAS": {
+    "STRM": "2267",
+    "CLASSNBR": "74584",
+    "CLASSSECTION": "1013",
+    "SUBJECT": "CSE",
+    "CATALOGNBR": "355",
+    "TITLE": "Intro Theoretical Computer Sci",
+    "CAMPUS": "TEMPE",
+    "INSTRUCTIONMODE": "P",
+    "STARTTIME": "12:00 PM",
+    "ENDTIME": "1:15 PM",
+    "MON": "Y",
+    "TUES": "N",
+    "WED": "Y",
+    "THURS": "N",
+    "FRI": "N",
+    "SAT": "N",
+    "SUN": "N",
+    "ENRLTOT": "79",
+    "ENRLCAP": "150",
+    "WAITTOT": "0",
+    "WAITCAP": "0",
+    "ENRLSTAT": "O",
+    "COMPONENTPRIMARY": "LEC",
+    "INSTRUCTORSLIST": [
+     "Xuerong Feng"
+    ],
+    "ENROLLDEADLINE": "2026-08-26 00:00:00.0"
+   }
+  },
+  {
+   "CLAS": {
+    "STRM": "2267",
+    "CLASSNBR": "76374",
+    "CLASSSECTION": "1007",
+    "SUBJECT": "CSE",
+    "CATALOGNBR": "355",
+    "TITLE": "Intro Theoretical Computer Sci",
+    "CAMPUS": "TEMPE",
+    "INSTRUCTIONMODE": "HY",
+    "STARTTIME": "9:00 AM<br/>&nbsp;",
+    "ENDTIME": "10:15 AM<br/>&nbsp;",
+    "MON": "N",
+    "TUES": "N",
+    "WED": "Y",
+    "THURS": "N",
+    "FRI": "N",
+    "SAT": "N",
+    "SUN": "N",
+    "ENRLTOT": "151",
+    "ENRLCAP": "150",
+    "WAITTOT": "0",
+    "WAITCAP": "0",
+    "ENRLSTAT": "C",
+    "COMPONENTPRIMARY": "LEC",
+    "INSTRUCTORSLIST": [
+     "Joshua Daymude"
+    ],
+    "ENROLLDEADLINE": "2026-08-26 00:00:00.0"
+   }
+  },
+  {
+   "CLAS": {
+    "STRM": "2267",
+    "CLASSNBR": "77621",
+    "CLASSSECTION": "2001",
+    "SUBJECT": "CSE",
+    "CATALOGNBR": "355",
+    "TITLE": "Intro Theoretical Computer Sci",
+    "CAMPUS": "TEMPE",
+    "INSTRUCTIONMODE": "OL",
+    "STARTTIME": null,
+    "ENDTIME": null,
+    "MON": "N",
+    "TUES": "N",
+    "WED": "N",
+    "THURS": "N",
+    "FRI": "N",
+    "SAT": "N",
+    "SUN": "N",
+    "ENRLTOT": "103",
+    "ENRLCAP": "125",
+    "WAITTOT": "0",
+    "WAITCAP": "0",
+    "ENRLSTAT": "O",
+    "COMPONENTPRIMARY": "LEC",
+    "INSTRUCTORSLIST": [
+     "Joshua Daymude"
+    ],
+    "ENROLLDEADLINE": "2026-08-26 00:00:00.0"
+   }
+  },
+  {
+   "CLAS": {
+    "STRM": "2267",
+    "CLASSNBR": "68159",
+    "CLASSSECTION": "1033",
+    "SUBJECT": "CSE",
+    "CATALOGNBR": "355",
+    "TITLE": "Intro Theoretical Computer Sci",
+    "CAMPUS": "TEMPE",
+    "INSTRUCTIONMODE": "P",
+    "STARTTIME": "11:15 AM",
+    "ENDTIME": "12:05 PM",
+    "MON": "N",
+    "TUES": "N",
+    "WED": "Y",
+    "THURS": "N",
+    "FRI": "N",
+    "SAT": "N",
+    "SUN": "N",
+    "ENRLTOT": "75",
+    "ENRLCAP": "75",
+    "WAITTOT": "0",
+    "WAITCAP": "0",
+    "ENRLSTAT": "C",
+    "COMPONENTPRIMARY": "REC",
+    "INSTRUCTORSLIST": [
+     "David Claveau"
+    ],
+    "ENROLLDEADLINE": "2026-08-26 00:00:00.0"
+   }
+  }
+ ]
+}
