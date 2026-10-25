@@ -27,22 +27,21 @@
 It's registration week. **CSE 355 is 150 / 150.** You refresh Class Search between classes, at lunch, at 1 am.
 A seat opens at 2:07 am. Someone else grabs it at 2:09.
 
-## ⚡ The fix
+## ⚡ See it
 
-```text
-you      watch CSE 355 for me, prof lee
-cubbie   Watching CSE 355, Prof Lee, MW 1:30 PM.
-         0 of 150 open right now, waitlist 3.
-         I'll check every 10 minutes and text you the second a seat opens.
+<div align="center">
 
-                       ⏳  ...2 days later, 2:07 am...
+<img src="assets/demo.svg" width="320" alt="Animated story: a student asks Cubbie to snipe full CSE 355, a lock-screen alert arrives at 2:07 am, Cubbie calls, and the student enrolls"/>
 
-cubbie   🎯 A seat just opened in CSE 355 (Prof Lee). 1 of 150.
-         Tap to take over and hit enroll:
-         https://go.oasis.asu.edu/addclass/?STRM=2271&ASU_CLASS_NBR=25636
+<br/><br/>
 
-                       📞  no reply in 5 min? Cubbie calls you.
-```
+| 💬 **Ask** | 🎯 **Lock on** | 🌙 **Sleep** | 🚨 **2:07 am** | 📞 **Ring ring** | ✅ **Enrolled** |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| *"snipe CSE 355"* | Live ASU seats, you say yes | Cubbie checks every 10 min | Text + add-class link | Missed it? It calls | **You** tap enroll |
+
+<sub>Illustration of the flow. In a real chat the seat numbers come live from ASU Class Search.</sub>
+
+</div>
 
 ## 🔄 How it works
 
