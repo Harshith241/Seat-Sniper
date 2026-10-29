@@ -22,18 +22,22 @@ import urllib.request
 from datetime import datetime, timedelta
 
 API = "https://eadvs-cscc-catalog-api.apps.asu.edu/catalog-microservices/api/v1/search/classes"
-UA = "seat-sniper/1.0 (Cubbie skill; one student's watch list, polls every 10 min)"
+UA = "seat-sniper/1.1 (Cubbie skill; one student's watch list, polls about once a minute)"
 HERE = os.path.dirname(os.path.abspath(__file__))
 SAMPLE_FILE = os.path.join(HERE, "..", "assets", "sample_seats.json")
 MAX_WATCHES = 10
 MAX_ERRORS = 3
 EXPIRE_DAYS = 30
 PAUSE = 1.0  # seconds between watches, to be polite
+MIN_INTERVAL = 30  # watch loop floor: at most 2 requests a minute per watch, to stay polite to ASU
+MAX_LOOP_MINUTES = 55  # Cubbie runs a background command for up to an hour
 DEFAULT_PREFS = {"calls_ok": None, "quiet_start": "22:00", "quiet_end": "07:30", "check_minutes": 10}
 DAYS = [("MON", "M"), ("TUES", "T"), ("WED", "W"), ("THURS", "Th"), ("FRI", "F"), ("SAT", "Sa"), ("SUN", "Su")]
 
 SAMPLE = False
 JSON_OUT = False
+LOUD_ONLY = False  # set inside the watch loop: skip routine lines
+QUIET_KINDS = ("NOCHANGE", "SNOOZED", "QUIET", "DONE", "ERROR")
 EVENTS = []
 
 
@@ -44,6 +48,8 @@ class FetchError(Exception):
 # ---------- output ----------
 
 def out(kind, wid=None, text="", **fields):
+    if LOUD_ONLY and kind in QUIET_KINDS:
+        return
     ev = {"kind": kind}
     if wid:
         ev["id"] = wid
@@ -57,7 +63,7 @@ def out(kind, wid=None, text="", **fields):
         return
     parts = (["SAMPLE"] if SAMPLE else []) + [kind] + ([wid] if wid else [])
     parts += ["%s=%s" % (k, v) for k, v in fields.items()]
-    print(" ".join(parts) + (" | " + text if text else ""))
+    print(" ".join(parts) + (" | " + text if text else ""), flush=True)
 
 
 # ---------- state ----------
@@ -263,7 +269,8 @@ def cmd_add(a):
     st = load()
     w = {"term": a.term, "class_number": a.class_number, "subject": (a.subject or "").upper(),
          "catalog": (a.catalog or "").upper(), "instructor_contains": a.instructor,
-         "campus": a.campus, "online_only": a.online, "component": a.component}
+         "campus": a.campus, "online_only": a.online, "component": a.component,
+         "min_open": max(1, a.min_open)}
     try:
         if a.class_number:
             w["mode"] = "section"
@@ -299,7 +306,7 @@ def cmd_add(a):
         out("FOUND", text="and %d more sections" % (len(secs) - 8))
     total_open = sum(s["open"] for s in secs)
     best = max(secs, key=lambda s: s["open"])
-    if total_open:
+    if total_open >= w["min_open"]:
         out("ALREADY_OPEN", seats=best["open"], cls=best["class_number"], link=add_link(a.term, best["class_number"]))
 
     if w["mode"] == "section":
@@ -329,12 +336,21 @@ def cmd_add(a):
     st["next_id"] += 1
     st["watches"].append(w)
     save(st)
-    out("SAVED", w["id"], every=st["prefs"]["check_minutes"], expires=w["expires"], text=w["label"])
+    out("SAVED", w["id"], alert_at=w["min_open"], expires=w["expires"], text=w["label"])
     return 0
 
 
 def cmd_check(a):
-    now = parse_now(a.now)
+    n = check_once(parse_now(a.now), a.waitlist)
+    if any(n.values()):
+        out("DONE", **n)
+    else:
+        out("QUIET")
+    return 0
+
+
+def check_once(now, waitlist):
+    """One pass over every active watch. Saves state; returns counts of what happened."""
     st = load()
     p = st["prefs"]
     n = dict(alerts=0, closed=0, errors=0, needs_human=0, expired=0)
@@ -363,7 +379,8 @@ def cmd_check(a):
             continue
         w["errors"] = 0
         prev = w.get("last_open", 0)
-        if prev == 0 and opn > 0:
+        need = w.get("min_open", 1)  # alert only when open seats reach this many
+        if prev < need <= opn:
             quiet = in_quiet(now, p)
             call = "yes" if p.get("calls_ok") and not quiet else "no"
             out("ALERT", w["id"], seats=opn, total=total, waitlist=wl, call=call,
@@ -373,21 +390,79 @@ def cmd_check(a):
                 out("QUIET_HOURS_HOLD", w["id"], text="text only, no call until " + p["quiet_end"])
             w["alerted_at"], w["acked"] = stamp(now), False
             n["alerts"] += 1
-        elif prev > 0 and opn == 0:
-            out("CLOSED_AGAIN", w["id"], text=w["label"] + ", still watching")
+        elif prev >= need > opn:
+            out("CLOSED_AGAIN", w["id"], seats=opn, text=w["label"] + ", still watching")
             w["alerted_at"], w["acked"] = None, False
             n["closed"] += 1
-        elif a.waitlist and wl != w.get("last_waitlist"):
+        elif waitlist and wl != w.get("last_waitlist"):
             out("WAITLIST_MOVED", w["id"], waitlist=wl, was=w.get("last_waitlist"), text=w["label"])
         else:
             out("NOCHANGE", w["id"], seats=opn, total=total, waitlist=wl)
         w.update(last_open=opn, last_total=total, last_waitlist=wl, last_checked=stamp(now))
     save(st)
-    if any(n.values()):
-        out("DONE", **n)
-    else:
-        out("QUIET")
-    return 0
+    return n
+
+
+def _lock_ok(path):
+    """True if we took the loop lock. A lock is live only while its pid runs and its time hasn't passed."""
+    try:
+        with open(path) as f:
+            held = json.load(f)
+        alive = True
+        try:
+            os.kill(int(held["pid"]), 0)
+        except (OSError, ValueError):
+            alive = False
+        if alive and held.get("until", 0) > time.time() and int(held["pid"]) != os.getpid():
+            return False
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return True
+
+
+def cmd_watch(a):
+    """Check every --interval seconds for --minutes, and stop the moment something needs the student.
+
+    Cubbie's recurring check-ins can't fire more often than every 15 minutes, so each check-in starts
+    this loop for ~14 minutes: the student is effectively checked every minute, around the clock.
+    """
+    interval = max(MIN_INTERVAL, a.interval)
+    minutes = max(0, min(MAX_LOOP_MINUTES, a.minutes))
+    start, t0 = parse_now(a.now), time.time()
+    deadline = t0 + minutes * 60
+    lock = state_path() + ".lock"
+    os.makedirs(os.path.dirname(lock), exist_ok=True)
+    if not SAMPLE and not _lock_ok(lock):
+        out("ALREADY_RUNNING", text="a watch loop is already checking; nothing to do")
+        return 0
+    if not SAMPLE:
+        with open(lock, "w") as f:
+            json.dump({"pid": os.getpid(), "until": deadline}, f)
+    global LOUD_ONLY
+    LOUD_ONLY = True  # inside the loop, print only lines the student must hear about
+    checks = 0
+    try:
+        while True:
+            now = start + timedelta(seconds=time.time() - t0)
+            n = check_once(now, a.waitlist)
+            checks += 1
+            if n["alerts"] or n["closed"] or n["needs_human"] or n["expired"]:
+                LOUD_ONLY = False
+                out("WATCH_STOP", checks=checks, text="act on the lines above now")
+                return 0
+            if SAMPLE or time.time() + interval > deadline:
+                break
+            time.sleep(interval)
+        LOUD_ONLY = False
+        out("WATCH_DONE", checks=checks, every_s=interval, text="no seat opened; the next check-in restarts the loop")
+        return 0
+    finally:
+        LOUD_ONLY = False
+        if not SAMPLE:
+            try:
+                os.remove(lock)
+            except OSError:
+                pass
 
 
 def prefs_line(p):
@@ -407,7 +482,7 @@ def cmd_list(a):
         if w.get("acked"):
             extra += ", student acknowledged"
         what = ("class " + w["class_number"]) if w["mode"] == "section" else "any matching section"
-        out("WATCH", w["id"], term=w["term"], seats=w.get("last_open"), total=w.get("last_total"),
+        out("WATCH", w["id"], term=w["term"], seats=w.get("last_open"), alert_at=w.get("min_open", 1), total=w.get("last_total"),
             waitlist=w.get("last_waitlist"), checked=w.get("last_checked"), expires=w["expires"],
             text="%s, %s%s" % (w["label"], what, extra))
     return 0
@@ -480,6 +555,7 @@ def build_parser():
     p.add_argument("--online", action="store_true", help="course mode: online sections only")
     p.add_argument("--component", help="course mode: LEC, LAB, REC... (default LEC when lectures exist)")
     p.add_argument("--now", help="student's local time, e.g. 2026-10-24T16:30")
+    p.add_argument("--min-open", type=int, default=1, help="alert only when at least this many seats are open (default 1)")
     p.add_argument("--confirm", action="store_true", help="save the watch (after the student said yes)")
     p.set_defaults(fn=cmd_add)
 
@@ -487,6 +563,13 @@ def build_parser():
     p.add_argument("--now", required=True, help="student's local time, e.g. 2026-10-24T16:30")
     p.add_argument("--waitlist", action="store_true", help="also report waitlist changes")
     p.set_defaults(fn=cmd_check)
+
+    p = sub.add_parser("watch", parents=[common], help="check every --interval seconds for --minutes; stops on the first alert")
+    p.add_argument("--now", required=True, help="student's local time when the loop starts")
+    p.add_argument("--interval", type=int, default=60, help="seconds between checks (min %d)" % MIN_INTERVAL)
+    p.add_argument("--minutes", type=int, default=14, help="how long to keep checking (max %d)" % MAX_LOOP_MINUTES)
+    p.add_argument("--waitlist", action="store_true", help="also report waitlist changes")
+    p.set_defaults(fn=cmd_watch)
 
     p = sub.add_parser("list", parents=[common], help="show watches and preferences")
     p.set_defaults(fn=cmd_list)
@@ -518,7 +601,7 @@ def main(argv=None):
     if SAMPLE:
         # ponytail: sample runs get a throwaway state dir so they never touch real watches.
         os.environ["SEAT_SNIPER_HOME"] = tempfile.mkdtemp(prefix="seat-sniper-sample-")
-        if a.cmd == "check":
+        if a.cmd in ("check", "watch"):
             with open(SAMPLE_FILE) as f:
                 seed = json.load(f)
             save({"version": 1, "next_id": 2, "prefs": dict(DEFAULT_PREFS, calls_ok=True),

@@ -175,6 +175,74 @@ class TestFailures(Base):
         self.assertEqual(code, 5)
 
 
+class TestWatchLoop(Base):
+    def setUp(self):
+        super().setUp()
+        self.sleeps = mock.patch.object(cs.time, "sleep", lambda s: None)
+        self.sleeps.start()
+        self.addCleanup(self.sleeps.stop)
+
+    def test_loop_stops_on_first_alert(self):
+        self.add_section(sec(open_=0))
+        seq = iter([[sec(open_=0)], [sec(open_=0)], [sec(open_=2)], [sec(open_=2)]])
+        with mock.patch.object(cs, "fetch", side_effect=lambda *a, **k: next(seq)):
+            code, out = self.run_cli("watch", "--now", "2026-10-24T16:30", "--interval", "30", "--minutes", "14")
+        self.assertEqual(code, 0)
+        self.assertIn("ALERT w1 seats=2", out)
+        self.assertIn("WATCH_STOP checks=3", out)
+        self.assertNotIn("NOCHANGE", out)  # routine lines stay silent inside the loop
+
+    def test_quiet_window_ends_with_done(self):
+        self.add_section(sec(open_=0))
+        with mock.patch.object(cs, "fetch", return_value=[sec(open_=0)]):
+            _, out = self.run_cli("watch", "--now", "2026-10-24T16:30", "--minutes", "0")
+        self.assertEqual(out.strip(), "WATCH_DONE checks=1 every_s=60 | no seat opened; the next check-in restarts the loop")
+
+    def test_second_loop_does_not_start(self):
+        self.add_section(sec(open_=0))
+        with open(os.path.join(self.home, "watches.json.lock"), "w") as f:
+            json.dump({"pid": os.getppid(), "until": cs.time.time() + 600}, f)
+        with mock.patch.object(cs, "fetch", return_value=[sec(open_=5)]):
+            _, out = self.run_cli("watch", "--now", "2026-10-24T16:30")
+        self.assertIn("ALREADY_RUNNING", out)
+        self.assertNotIn("ALERT", out)
+
+    def test_stale_lock_is_ignored(self):
+        self.add_section(sec(open_=0))
+        with open(os.path.join(self.home, "watches.json.lock"), "w") as f:
+            json.dump({"pid": 999999, "until": cs.time.time() + 600}, f)
+        with mock.patch.object(cs, "fetch", return_value=[sec(open_=1)]):
+            _, out = self.run_cli("watch", "--now", "2026-10-24T16:30")
+        self.assertIn("ALERT w1", out)
+        self.assertFalse(os.path.exists(os.path.join(self.home, "watches.json.lock")))
+
+    def test_interval_floor(self):
+        self.add_section(sec(open_=0))
+        with mock.patch.object(cs, "fetch", return_value=[sec(open_=0)]):
+            _, out = self.run_cli("watch", "--now", "2026-10-24T16:30", "--interval", "5", "--minutes", "0")
+        self.assertIn("every_s=30", out)
+
+    def test_sample_watch(self):
+        code, out = self.run_cli("watch", "--sample", "--now", "2026-10-24T16:30")
+        self.assertEqual(code, 0)
+        self.assertIn("SAMPLE ALERT w1", out)
+
+
+class TestThreshold(Base):
+    def test_min_open_waits_for_enough_seats(self):
+        self.run_cli("prefs", "--calls", "yes")
+        with mock.patch.object(cs, "fetch", return_value=[sec(open_=0)]):
+            _, out = self.run_cli("add", "--term", "2271", "--class-number", "12345", "--min-open", "6",
+                                  "--now", "2026-10-24T12:00", "--confirm")
+        self.assertIn("alert_at=6", out)
+        _, out = self.check([sec(open_=3)])
+        self.assertNotIn("ALERT", out)
+        _, out = self.check([sec(open_=6)])
+        self.assertIn("ALERT w1 seats=6", out)
+        _, out = self.check([sec(open_=4)])
+        self.assertIn("CLOSED_AGAIN w1", out)
+
+
 class TestCommands(Base):
     def test_preview_does_not_save(self):
         with mock.patch.object(cs, "fetch", return_value=[sec()]):

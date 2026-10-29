@@ -11,7 +11,7 @@
 ![Cubbie Skill](https://img.shields.io/badge/Cubbie-Skill-7C3AED?style=for-the-badge&logo=apple&logoColor=white)
 ![ASU](https://img.shields.io/badge/ASU-Class%20Search-8C1D40?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-stdlib%20only-FFC627?style=for-the-badge&logo=python&logoColor=black)
-![Tests](https://img.shields.io/badge/tests-22%20passing-22C55E?style=for-the-badge&logo=checkmarx&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-29%20passing-22C55E?style=for-the-badge&logo=checkmarx&logoColor=white)
 ![Never enrolls](https://img.shields.io/badge/never-enrolls%20for%20you-EF4444?style=for-the-badge)
 
 <br/>
@@ -37,7 +37,7 @@ A seat opens at 2:07 am. Someone else grabs it at 2:09.
 
 | 💬 **Ask** | 🎯 **Lock on** | 🌙 **Sleep** | 🚨 **2:07 am** | 📞 **Ring ring** | ✅ **Enrolled** |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| *"snipe CSE 355"* | Live ASU seats, you say yes | Cubbie checks every 10 min | Text + add-class link | Missed it? It calls | **You** tap enroll |
+| *"snipe CSE 355"* | Live ASU seats, you say yes | Cubbie checks about every minute | Text + add-class link | Missed it? It calls | **You** tap enroll |
 
 <sub>Illustration of the flow. In a real chat the seat numbers come live from ASU Class Search.</sub>
 
@@ -48,7 +48,7 @@ A seat opens at 2:07 am. Someone else grabs it at 2:09.
 ```mermaid
 flowchart LR
     A["💬 'watch CSE 355'"] --> B["🔎 Look up live seats<br/>show the student, get a yes"]
-    B --> C["⏰ Cubbie check-in<br/>every 10 min"]
+    B --> C["⏰ Cubbie checks<br/>about every minute"]
     C --> D{"🪑 0 → seat open?"}
     D -- no --> C
     D -- yes --> E["📱 Text + link"]
@@ -112,9 +112,9 @@ Sample mode uses fake data in a throwaway folder. It never touches real watches.
 ```text
 seat-sniper/
 ├── SKILL.md                 🧠 what Cubbie reads: when to trigger, steps, replies, boundaries
-├── scripts/check_seats.py   ⚙️  add · check · list · remove · snooze · ack · prefs   (--sample, --json)
+├── scripts/check_seats.py   ⚙️  add · check · watch · list · remove · snooze · ack · prefs   (--sample, --json)
 ├── assets/sample_seats.json 🎭 fake demo data, clearly labeled
-├── tests/                   ✅ 22 unit tests + a real trimmed ASU response
+├── tests/                   ✅ 29 unit tests + a real trimmed ASU response
 └── spike/NOTES.md           🔬 how the ASU data source works (verified 2026-10-24)
 ```
 
@@ -125,13 +125,13 @@ seat-sniper/
 - **Zero setup:** Python standard library only. State lives in `~/.config/seat-sniper/watches.json`.
 
 ```bash
-python3 -m unittest discover tests        # 22 tests, no network
+python3 -m unittest discover tests        # 29 tests, no network
 ```
 
 ## ⚠️ Honest limits
 
 - ASU only.
-- Checks every 5 to 15 minutes, so a seat that opens and fills in between can be missed.
+- Checks about once a minute (30 s at the fastest), so a seat that opens and fills within seconds can still be missed.
 - It reads public seat counts. It can't see holds, prerequisites or reserved seats on your account.
 
 ---

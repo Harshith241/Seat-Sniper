@@ -1,6 +1,6 @@
 ---
 name: seat-sniper
-description: Watches full ASU classes and texts the student the moment a seat opens, then calls if they miss it, and opens the add-class page so they can hit enroll. Use whenever an ASU student says a class is full, asks to watch, track or snipe a seat or section, mentions a waitlist or a class number, or asks what classes they are watching, even if they don't say "watch". Checks ASU Class Search every 10 minutes. Never enrolls, drops or pays for the student.
+description: Watches full ASU classes and texts the student the moment a seat opens, then calls if they miss it, and opens the add-class page so they can hit enroll. Use whenever an ASU student says a class is full, asks to watch, track or snipe a seat or section, mentions a waitlist or a class number, or asks what classes they are watching, even if they don't say "watch". Checks ASU Class Search about every minute. Never enrolls, drops or pays for the student.
 ---
 
 # Seat Sniper
@@ -37,6 +37,8 @@ July, the coming fall (or summer if the student says summer). Confirm it in the 
    ```
 
    Optional course filters: `--campus Tempe`, `--online`, `--component LAB` (lectures by default).
+   If the student only wants to hear about it once several seats are open ("tell me at 6+ seats"), add
+   `--min-open 6`. The default is 1: any open seat alerts.
    The output has `FOUND` lines (class number, professor, days and time, campus, seats) and ends in `PREVIEW`.
 3. Show the student what was found in one or two lines and ask for a yes.
    - `ALREADY_OPEN` means a seat is open right now: tell them, send the link on its own line, and ask if they still
@@ -48,21 +50,38 @@ July, the coming fall (or summer if the student says summer). Confirm it in the 
    text you. Want a call too if you don't answer in 5 minutes?" Save it in memory and in the script:
    `python3 scripts/check_seats.py prefs --calls yes` (or `no`). Default quiet hours are 22:00 to 07:30 (text only, no
    call); change with `--quiet 23:00-08:00` if the student asks. Never ask again for later watches.
-6. Schedule the check, once for all watches. If there is no Seat Sniper check-in yet, create a recurring check-in
-   every 10 minutes (the student can pick 5 or 15; save it with `prefs --every`). Word it so it makes sense days later:
+6. Schedule the check, once for all watches. Seats in full classes go in minutes, so Seat Sniper checks about
+   **every minute**, not every 15. Recurring check-ins can't run that often, so each check-in starts a watch loop
+   that keeps checking on its own until the next check-in:
 
-   "Seat Sniper check: from the seat-sniper Skill folder run
-   `python3 scripts/check_seats.py check --now <student's local date and time>`.
-   Act on each line as the seat-sniper Skill says. If the output is only QUIET or NOCHANGE lines, send nothing.
-   Never enroll, drop or pay for the student."
+   - Create one recurring check-in every 15 minutes (or the shortest interval check-ins allow), if there isn't one yet.
+   - Word it so it makes sense days later:
 
-   Mention plainly that a 10-minute check can miss a seat that opens and fills in between.
+     "Seat Sniper check: from the seat-sniper Skill folder, run this as a background command (it takes up to 14
+     minutes): `python3 scripts/check_seats.py watch --now <student's local date and time> --interval 60 --minutes 14`.
+     It checks every 60 seconds and ends early the moment a seat opens. When it ends, act on each line as the
+     seat-sniper Skill says. If it printed only WATCH_DONE or ALREADY_RUNNING, send nothing. Never enroll, drop or
+     pay for the student."
 
-## Reading `check` output
+   - Act on the loop's output as soon as the command finishes. An `ALERT` ends the loop right away, so the student
+     hears within about a minute of the seat opening.
+   - Set `--minutes` to the check-in interval minus one, so loops don't overlap. A lock file also stops a second
+     loop from starting (`ALREADY_RUNNING`).
+   - If the student asks for faster, use `--interval 30`. That's the floor: going lower doesn't help and hammers
+     ASU's servers.
+   - If background commands aren't available, fall back to `check` (one pass) in each check-in, and tell the
+     student it's every 15 minutes instead of every minute.
+
+   Mention plainly that even a one-minute check can miss a seat that opens and fills within seconds.
+
+## Reading `watch` and `check` output
 
 | Line | What to do |
 | --- | --- |
 | `ALERT w1 seats=N ... call=yes/no cls=... link=...` | Seat open. Follow "When a seat opens" below. |
+| `WATCH_STOP checks=N` | The loop stopped early because of the lines above it. Act on them now. The next check-in restarts the loop. |
+| `WATCH_DONE checks=N` | A quiet loop finished. Send nothing. |
+| `ALREADY_RUNNING` | A loop is already checking. Send nothing. |
 | `QUIET_HOURS_HOLD w1` | Text only. Do not call, even if `call=yes` appeared earlier. |
 | `CLOSED_AGAIN w1` | Text "It filled again. Still watching <label>." Nothing else; the watch re-arms itself. |
 | `NOCHANGE`, `SNOOZED`, `QUIET` | Send nothing. |
@@ -92,7 +111,8 @@ July, the coming fall (or summer if the student says summer). Confirm it in the 
 | "what am I watching?" | `list` (shows each watch with last seats, plus preferences) |
 | "stop watching CSE 355" | `list` to find the id, then `remove <id>` |
 | "pause it for an hour" / "not now" | `snooze <id> --minutes 60 --now <local time>` |
-| "check every 5 minutes" | `prefs --every 5`, then change the recurring check-in to match |
+| "check faster" / "every 30 seconds" | Change the check-in's command to `--interval 30` (the floor) |
+| "only tell me at 6+ seats" | `remove <id>`, then add again with `--min-open 6` |
 | "no calls" / "calls are fine" | `prefs --calls no` (or `yes`), and update memory |
 | "only Prof Lee" on an existing course watch | `remove <id>`, then add again with `--instructor Lee` |
 
@@ -105,7 +125,7 @@ Short, plain text, one idea per message, links on their own line. No Markdown. L
 
 ```text
 Watching CSE 355, Prof Lee, MW 1:30 PM. 0 of 150 open right now, waitlist 3.
-I'll check every 10 minutes and text you the second a seat opens.
+I'll check about every minute and text you the second a seat opens.
 ```
 
 ```text
@@ -128,7 +148,7 @@ Heads up: I can't reach ASU Class Search right now, so your CSE 355 watch is bli
 - Never ask for the student's ASU password, ASURITE, or any key in chat. ASU sign-in happens in the browser, by the
   student.
 - Watches are for the student's own registration. Cubbie texts and calls only its own student.
-- Checks are every 5 to 15 minutes, not faster, to be polite to ASU's servers.
+- Checks run about once a minute, never faster than every 30 seconds, to be polite to ASU's servers.
 - Say plainly that a seat can open and fill between two checks.
 
 ## When something fails
