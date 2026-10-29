@@ -61,6 +61,30 @@ class TestParse(Base):
         self.assertEqual(cs.prof(secs["66447"]), "Prof Claveau")
 
 
+class TestLiveSeats(Base):
+    # Real CSE 340 #18607 entry, 2026-10-29: the index (CLAS) lagged at 195 enrolled while the
+    # site showed "5 of 220" from seatInfo; 5 of the seats were reserved for a group.
+    REAL = {"CLAS": {"CLASSNBR": "18607", "SUBJECT": "CSE", "CATALOGNBR": "340", "ENRLTOT": "195",
+                     "ENRLCAP": "220", "ENRLSTAT": "O", "WAITTOT": "0", "INSTRUCTORSLIST": ["David Claveau"]},
+            "seatInfo": {"ENRL_CAP": 220, "ENRL_TOT": 215},
+            "reservedSeatsInfo": [{"ENRL_CAP": 5, "ENRL_TOT": 0, "RSRV_CAP_NBR": 101}]}
+
+    def test_live_seat_info_wins_over_stale_index(self):
+        s = cs.parse(self.REAL)
+        self.assertEqual((s["open"], s["total"], s["reserved"]), (5, 220, 5))
+        self.assertIn("5 of 220 open (5 of them reserved", cs.describe(s))
+
+    def test_stale_closed_flag_cannot_hide_an_opening(self):
+        c = json.loads(json.dumps(self.REAL))
+        c["CLAS"]["ENRLSTAT"] = "C"
+        self.assertEqual(cs.parse(c)["open"], 5)
+
+    def test_full_by_live_count(self):
+        c = json.loads(json.dumps(self.REAL))
+        c["seatInfo"] = {"ENRL_CAP": 220, "ENRL_TOT": 221}
+        self.assertEqual(cs.parse(c)["open"], 0)
+
+
 class TestDiff(Base):
     def test_closed_to_open_alerts_once(self):
         self.add_section(sec(open_=0))

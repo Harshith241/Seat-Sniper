@@ -31,12 +31,14 @@ Authorization: Bearer null
 | instructors | `INSTRUCTORSLIST` (list of names) |
 | days / time | `MON`..`SUN` (`Y`/`N`), `STARTTIME`, `ENDTIME` |
 | campus / mode | `CAMPUS`, `INSTRUCTIONMODE` (`P`, `HY`, `OL`...) |
-| enrolled / capacity | `ENRLTOT`, `ENRLCAP` |
+| enrolled / capacity (live) | `seatInfo.ENRL_TOT`, `seatInfo.ENRL_CAP` (next to `CLAS`, not inside it) |
+| enrolled / capacity (index, can lag) | `CLAS.ENRLTOT`, `CLAS.ENRLCAP`: fallback only |
+| reserved seats | `reservedSeatsInfo[].ENRL_CAP - ENRL_TOT` |
 | waitlist | `WAITTOT` |
 | status | `ENRLSTAT` (`O` open, `C` closed) |
 | component | `COMPONENTPRIMARY` (`LEC`, `REC`, `LAB`...) |
 
-Seats open = `ENRLCAP - ENRLTOT` when `ENRLSTAT` is `O`, else 0 (a section can be closed with reserved seats, or over-enrolled: 151/150 seen).
+Seats open = `seatInfo.ENRL_CAP - seatInfo.ENRL_TOT` (never below 0; over-enrolled 151/150 was seen). Only when `seatInfo` is missing: `CLAS.ENRLCAP - CLAS.ENRLTOT` if `ENRLSTAT` is `O`, else 0.
 
 ## Checked against the website
 
@@ -50,3 +52,11 @@ CSE 355 Fall 2026: 66447 150/150 closed, 66448 93/150 open, 74584 79/150 open. T
 ## Still to check on Cubbie
 
 Run `python3 scripts/check_seats.py add --term 2271 --class-number 14968` from Cubbie's sandbox. If it prints `ERROR reason=...`, Cubbie's network differs; use rung C (Cubbie's browser reads the page).
+
+## Correction (2026-10-29)
+
+`CLAS.ENRLTOT` comes from a search index that lags registration. CSE 340 #18607 showed 195/220 in `CLAS`
+while the site showed "5 of 220". The site uses `seatInfo` (215/220). The script now reads `seatInfo` first
+and trusts it over the indexed `ENRLSTAT` flag, falling back to `CLAS` only when `seatInfo` is missing.
+`reservedSeatsInfo` lists seats held for a group; they're reported, not subtracted, because the student may
+belong to that group.

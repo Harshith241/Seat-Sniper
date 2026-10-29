@@ -133,8 +133,19 @@ def _iso_date(x):
 
 def parse(c):
     C = c.get("CLAS", c)
-    tot, cap = _int(C.get("ENRLTOT")), _int(C.get("ENRLCAP"))
-    status = "open" if C.get("ENRLSTAT") == "O" else "closed"
+    # CLAS.* comes from a search index that lags behind registration (seen 2026-10-29: index said
+    # 195/220 enrolled while the site showed 215/220). seatInfo is the live count the site displays,
+    # so when it is present trust it fully, including over the indexed open/closed flag.
+    live = c.get("seatInfo") if isinstance(c.get("seatInfo"), dict) else None
+    if live:
+        tot, cap = _int(live.get("ENRL_TOT")), _int(live.get("ENRL_CAP"))
+        status = "open" if cap > tot else "closed"
+    else:
+        tot, cap = _int(C.get("ENRLTOT")), _int(C.get("ENRLCAP"))
+        status = "open" if C.get("ENRLSTAT") == "O" else "closed"
+    # Seats held for a group of students (a major, a cohort); they may not be open to everyone.
+    reserved = sum(max(0, _int(r.get("ENRL_CAP")) - _int(r.get("ENRL_TOT")))
+                   for r in (c.get("reservedSeatsInfo") or []) if isinstance(r, dict))
     return {
         "class_number": str(C.get("CLASSNBR") or ""),
         "subject": (C.get("SUBJECT") or "").upper(),
@@ -147,8 +158,8 @@ def parse(c):
         "mode": C.get("INSTRUCTIONMODE") or "",
         "component": C.get("COMPONENTPRIMARY") or "",
         "enroll_deadline": _iso_date(C.get("ENROLLDEADLINE")),
-        # Closed sections can still show cap > total (reserved seats), so trust ENRLSTAT.
         "open": max(0, cap - tot) if status == "open" else 0,
+        "reserved": reserved,
         "total": cap,
         "waitlist": _int(C.get("WAITTOT")),
         "status": status,
@@ -225,8 +236,10 @@ def prof(s):
 def describe(s):
     where = "online" if is_online(s) else s["campus"].title()
     when = ("%s %s" % (s["days"], s["time"])).strip() or "no set time"
-    return "%s %s, %s, %s, %s, %d of %d open, waitlist %d" % (
-        s["subject"], s["catalog"], prof(s), when, where, s["open"], s["total"], s["waitlist"])
+    held = s.get("reserved", 0)
+    note = " (%d of them reserved for a specific group)" % min(held, s["open"]) if held and s["open"] else ""
+    return "%s %s, %s, %s, %s, %d of %d open%s, waitlist %d" % (
+        s["subject"], s["catalog"], prof(s), when, where, s["open"], s["total"], note, s["waitlist"])
 
 
 def add_link(term, nbr):

@@ -94,6 +94,8 @@ July, the coming fall (or summer if the student says summer). Confirm it in the 
 ## When a seat opens
 
 1. Text right away, one message: the label first, the seats, then the link on its own line.
+   If the alert says some open seats are "reserved for a specific group", add one short line: those seats may be held
+   for certain majors or cohorts, so the student should check the add page to see if they qualify.
 2. Open the link in the browser and hand it to the student ("tap to take over"). If ASU asks for a sign-in, the
    student signs in themselves. Never type the student's ASU password and never ask for it in chat.
 3. If the line says `call=yes`, create a one-time check-in for 5 minutes later: "Seat Sniper follow-up: if the
