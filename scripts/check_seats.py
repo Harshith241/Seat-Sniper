@@ -416,11 +416,23 @@ def check_once(now, waitlist):
     return n
 
 
+def _boot_id():
+    # Changes on every restart (Linux). After Cubbie's sandbox restarts, pids start over and a new
+    # process can reuse the old loop's pid; the boot id tells a stale lock from a live one.
+    try:
+        with open("/proc/sys/kernel/random/boot_id") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
 def _lock_ok(path):
-    """True if we took the loop lock. A lock is live only while its pid runs and its time hasn't passed."""
+    """True if we took the loop lock. A lock is live only on this boot, while its pid runs, before its time."""
     try:
         with open(path) as f:
             held = json.load(f)
+        if held.get("boot", "") != _boot_id():
+            return True  # left over from before a restart: that loop is gone
         alive = True
         try:
             os.kill(int(held["pid"]), 0)
@@ -450,7 +462,7 @@ def cmd_watch(a):
         return 0
     if not SAMPLE:
         with open(lock, "w") as f:
-            json.dump({"pid": os.getpid(), "until": deadline}, f)
+            json.dump({"pid": os.getpid(), "until": deadline, "boot": _boot_id()}, f)
     global LOUD_ONLY
     LOUD_ONLY = True  # inside the loop, print only lines the student must hear about
     checks = 0

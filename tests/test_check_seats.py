@@ -240,6 +240,16 @@ class TestWatchLoop(Base):
         self.assertIn("ALERT w1", out)
         self.assertFalse(os.path.exists(os.path.join(self.home, "watches.json.lock")))
 
+    def test_lock_from_before_a_restart_is_ignored(self):
+        # pid is "alive" (reused after the restart) and time remains, but the boot id changed.
+        self.add_section(sec(open_=0))
+        with open(os.path.join(self.home, "watches.json.lock"), "w") as f:
+            json.dump({"pid": os.getppid(), "until": cs.time.time() + 600, "boot": "before-restart"}, f)
+        with mock.patch.object(cs, "_boot_id", return_value="after-restart"), \
+                mock.patch.object(cs, "fetch", return_value=[sec(open_=1)]):
+            _, out = self.run_cli("watch", "--now", "2026-10-30T18:30")
+        self.assertIn("ALERT w1", out)
+
     def test_interval_floor(self):
         self.add_section(sec(open_=0))
         with mock.patch.object(cs, "fetch", return_value=[sec(open_=0)]):

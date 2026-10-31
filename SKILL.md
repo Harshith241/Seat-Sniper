@@ -164,6 +164,8 @@ Heads up: I can't reach ASU Class Search right now, so your CSE 355 watch is bli
 | `ERROR reason=watch_limit` | Ten watches already. Ask which one to drop. |
 | `WARN ... unreadable` | The saved watches file was damaged and set aside. Tell the student the watches need re-adding and offer to add them again. |
 | Phone calls not available | Text only and tell the student once that calls aren't on. |
+| A scheduled loop ends "lost" or with no exit code | A sandbox restart killed it. Not an error: let the next check-in run. If the schedule is blocked, recreate it now (step 7). |
+| Two check-ins in a row lost, or `list` shows `checked=` older than 3 minutes during coverage | The watch is down. Restart the schedule and tell the student the time window it was down. |
 
 ## Trying it without ASU
 
