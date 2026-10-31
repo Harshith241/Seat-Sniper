@@ -72,7 +72,20 @@ July, the coming fall (or summer if the student says summer). Confirm it in the 
    - If background commands aren't available, fall back to `check` (one pass) in each check-in, and tell the
      student it's every 15 minutes instead of every minute.
 
+   - If one schedule can't start often enough for a full day (a daily cap on starts), split it into two identical
+     schedules, 00:10–11:55 and 12:10–23:55, so the loops run back to back around the clock.
+
    Mention plainly that even a one-minute check can miss a seat that opens and fills within seconds.
+
+7. Keep coverage on. A watch the student believes is running but isn't is the worst failure of this skill.
+   - A loop cut off by a sandbox restart (status "lost", no exit code, "computer restarted") is not a failure of
+     the watch. Nothing needs resolving: the saved watch is untouched, and the next check-in starts a fresh loop.
+     Never pause, block or wait on a schedule because of a lost run. If the scheduler has blocked it anyway, delete
+     the schedule and create an identical one right away.
+   - If two check-ins in a row don't run or are lost, restart the schedule and text the student once:
+     "Heads up: your <label> watch was down from <time> to <time>. It's running again."
+   - When the student asks "is it running?", run `list`. During coverage, `checked=` should be within the last
+     3 minutes. If it's older, the loop is down: restart it, then answer.
 
 ## Reading `watch` and `check` output
 
